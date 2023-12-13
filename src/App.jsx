@@ -41,7 +41,7 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fileName: "generated-video.mp4", // Replace with your file name
+          fileName: "test/testvideo.mp4", // Replace with your file name
           livePeerApiKey: apiKeys.livePeerKey,
         }),
       });
