@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Replicate from "replicate"; // Import Replicate
 import "./App.css";
 
 export default function App() {
@@ -20,22 +19,20 @@ export default function App() {
   async function handleGenerateClick() {
     setLoading(true);
 
-    const replicate = new Replicate({
-      auth: apiKeys.replicateKey, // Use the entered API key
-    });
-
     try {
-      const output = await replicate.run(
-        "cjwbw/damo-text-to-video:4e9283b2df49fad2dcf95755",
-        {
-          input: {
-            prompt: prompt, // Use the entered prompt
-            // Add other required parameters here
-          },
+      const response = await fetch("http://localhost:5000/api/replicate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          replicateApiKey: apiKeys.replicateKey, // Send the Replicate API key
+          prompt: prompt, // Send the prompt
+        }),
+      });
 
-      setVideoSrc(output); // Assuming the output is a URL to the video
+      const data = await response.json();
+      setVideoSrc(data.output); // Assuming the output is the URL to the video
     } catch (error) {
       console.error("Failed to generate video:", error);
     }
