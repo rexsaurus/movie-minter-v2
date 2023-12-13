@@ -1,6 +1,6 @@
-const express = require("express");
-const axios = require("axios");
-const cors = require("cors");
+import express from "express";
+import axios from "axios";
+import cors from "cors";
 
 const app = express();
 app.use(cors());
@@ -45,3 +45,5 @@ app.post("/api/replicate", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
+
+export default app;
