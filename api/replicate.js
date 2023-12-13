@@ -2,6 +2,7 @@ import express from "express";
 import axios from "axios";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
+import cors from "cors";
 
 // Load environment variables
 dotenv.config();
@@ -9,6 +10,7 @@ dotenv.config();
 // Create an express application
 const app = express();
 app.use(bodyParser.json());
+app.use(cors()); // Enable CORS for all routes
 
 // Define the port
 const PORT = 5001;
