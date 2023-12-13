@@ -1,0 +1,97 @@
+/* App.css */
+
+/* Apply a reset on margins and paddings */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Style the whole app */
+.app {
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Style the header */
+.header {
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+/* Style the main content area */
+.content {
+  display: flex;
+  flex: 1;
+  padding: 20px;
+}
+
+/* Style the form area */
+.form {
+  flex-basis: 300px;
+  padding-right: 20px;
+}
+
+/* Add space between form items */
+.form input, .form textarea, .form button {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+/* Style the video container */
+.video-container {
+  flex: 1;
+  background-color: #f90; /* Placeholder color */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.video-container video {
+  width: 100%;
+  height: auto;
+}
+
+/* Style the footer */
+.footer {
+  background-color: #333;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.footer button {
+  background-color: #f90;
+  border: none;
+  padding: 10px;
+  margin: 0 5px;
+  cursor: pointer;
+}
+
+/* Add hover effect to buttons */
+.footer button:hover {
+  opacity: 0.9;
+}
+
+/* Additional styles for the connect button */
+.header button {
+  background-color: #f90;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.header button:hover {
+  opacity: 0.9;
+}
