@@ -31,7 +31,7 @@ app.post("/generate-video", async (req, res) => {
         input: {
           prompt, // Use the prompt from the request
           // Set other parameters as needed
-        },
+        }npm install dotenv,
       },
     );
 
