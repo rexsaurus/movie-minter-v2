@@ -18,30 +18,39 @@ export default function App() {
 
   async function handleGenerateClick() {
     setLoading(true);
-
     try {
       const response = await fetch("http://localhost:5001/generate-video", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: prompt,
-          apiKey: apiKeys.replicateKey, // Send the API key here
+          apiKey: apiKeys.replicateKey,
         }),
       });
-
       const data = await response.json();
-      setVideoSrc(data.output); // Assuming the output is the URL to the video
+      setVideoSrc(data.output);
     } catch (error) {
       console.error("Failed to generate video:", error);
     }
-
     setLoading(false);
   }
 
   async function handleStoreOnLivePeerClick() {
-    // Implement storing the video on LivePeer
+    try {
+      const response = await fetch("http://localhost:5001/request-upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: "generated-video.mp4", // Replace with your file name
+          livePeerApiKey: apiKeys.livePeerKey,
+        }),
+      });
+      const data = await response.json();
+      console.log("Upload URL received:", data);
+      // Additional code to handle video upload to LivePeer
+    } catch (error) {
+      console.error("Error storing video on LivePeer:", error);
+    }
   }
 
   async function handleMintAsNFTClick() {
