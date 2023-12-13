@@ -1,49 +1,49 @@
 import express from "express";
-import axios from "axios";
-import cors from "cors";
+import Replicate from "replicate";
+import bodyParser from "body-parser";
+import dotenv from "dotenv";
 
+// Load environment variables
+dotenv.config();
+
+// Create an express application
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-const port = 5000; // Backend server port
+// Define the port
+const PORT = 5001;
 
-app.post("/api/replicate", async (req, res) => {
-  const { replicateApiKey, prompt } = req.body;
-
-  // Ensure API key and prompt are provided
-  if (!replicateApiKey || !prompt) {
-    return res.status(400).send("API key and prompt are required");
-  }
-
+// POST route to handle Replicate API calls
+app.post("/generate-video", async (req, res) => {
   try {
-    const replicateResponse = await axios.post(
-      "https://api.replicate.com/v1/predictions",
+    // Extract prompt and API key from the request body
+    const { prompt, apiKey } = req.body;
+
+    // Initialize Replicate client with the provided API key
+    const replicate = new Replicate({
+      auth: apiKey,
+    });
+
+    // Make the API call to Replicate
+    const output = await replicate.run(
+      "cjwbw/damo-text-to-video:4e9283b2df49fad2dcf95755",
       {
-        version: "4e9283b2df49fad2dcf95755", // This should be your model's version
         input: {
-          prompt: prompt,
-          // Add other parameters if needed
-        },
-      },
-      {
-        headers: {
-          Authorization: `Token ${replicateApiKey}`,
-          "Content-Type": "application/json",
+          prompt, // Use the prompt from the request
+          // Set other parameters as needed
         },
       },
     );
 
-    // Send the response from Replicate API back to the frontend
-    res.json(replicateResponse.data);
+    // Send the response back to the client
+    res.status(200).json({ videoUrl: output });
   } catch (error) {
-    console.error("Error calling Replicate API:", error);
-    res.status(500).send(error.message);
+    console.error("Error generating video:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
-export default app;
