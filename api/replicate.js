@@ -10,7 +10,7 @@ dotenv.config();
 // Create an express application
 const app = express();
 
-// Use CORS middleware (You can configure it as needed)
+// Use CORS middleware
 app.use(cors());
 
 // Parse JSON bodies
@@ -22,12 +22,12 @@ const PORT = process.env.PORT || 5001;
 // POST route to handle video generation requests
 app.post("/generate-video", async (req, res) => {
   try {
-    // Extract prompt from the request body
-    const { prompt } = req.body;
+    // Extract prompt and API key from the request body
+    const { prompt, apiKey } = req.body;
 
-    // Initialize Replicate client with the API key from environment variables
+    // Initialize Replicate client with the provided API key
     const replicate = new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN,
+      auth: apiKey,
     });
 
     // Create a prediction using the Replicate client

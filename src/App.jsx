@@ -27,7 +27,7 @@ export default function App() {
         },
         body: JSON.stringify({
           prompt: prompt,
-          apiKey: apiKeys.replicateKey,
+          apiKey: apiKeys.replicateKey, // Send the API key here
         }),
       });
 
