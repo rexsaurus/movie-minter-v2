@@ -20,14 +20,14 @@ export default function App() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5001/api/replicate", {
+      const response = await fetch("http://localhost:5001/generate-video", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          replicateApiKey: apiKeys.replicateKey, // Send the Replicate API key
-          prompt: prompt, // Send the prompt
+          prompt: prompt,
+          apiKey: apiKeys.replicateKey,
         }),
       });
 
