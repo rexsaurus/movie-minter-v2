@@ -1,49 +1,49 @@
 import express from "express";
-import axios from "axios";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cors from "cors";
+import Replicate from "replicate";
 
 // Load environment variables
 dotenv.config();
 
 // Create an express application
 const app = express();
+
+// Use CORS middleware (You can configure it as needed)
+app.use(cors());
+
+// Parse JSON bodies
 app.use(bodyParser.json());
-app.use(cors()); // Enable CORS for all routes
 
 // Define the port
-const PORT = 5001;
+const PORT = process.env.PORT || 5001;
 
-// POST route to handle Replicate API calls
+// POST route to handle video generation requests
 app.post("/generate-video", async (req, res) => {
   try {
-    // Extract prompt and API key from the request body
-    const { prompt, apiKey } = req.body;
+    // Extract prompt from the request body
+    const { prompt } = req.body;
 
-    // Prepare the data for the POST request
-    const postData = {
-      version: "4e9283b2df49fad2dcf95755",
-      input: {
-        prompt: prompt,
-        // Additional parameters can be added here
-      },
-    };
+    // Initialize Replicate client with the API key from environment variables
+    const replicate = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
+    });
 
-    // Make the API call to Replicate
-    const response = await axios.post(
-      "https://api.replicate.com/v1/predictions",
-      postData,
+    // Create a prediction using the Replicate client
+    let prediction = await replicate.deployments.predictions.create(
+      "rexsaurus", // Replace with your actual deployment name
+      "movie-minter-v2", // Replace with your actual version
       {
-        headers: {
-          Authorization: `Token ${apiKey}`,
-          "Content-Type": "application/json",
-        },
+        input: { prompt },
       },
     );
 
-    // Send the response back to the client
-    res.status(200).json(response.data);
+    // Wait for the prediction to complete
+    prediction = await replicate.wait(prediction);
+
+    // Send the prediction output back to the client
+    res.status(200).json(prediction.output);
   } catch (error) {
     console.error("Error generating video:", error);
     res.status(500).json({ error: error.message });
