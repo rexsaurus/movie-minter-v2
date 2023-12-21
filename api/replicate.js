@@ -6,7 +6,7 @@ import Replicate from "replicate";
 import dotenv from "dotenv";
 import { TypeT } from "livepeer/dist/models/components/index.js";
 import crypto from "crypto";
-import axios from "axios";
+import forge from "node-forge";
 
 dotenv.config();
 
@@ -36,55 +36,33 @@ app.post("/generate-video", async (req, res) => {
   }
 });
 
-// Function to fetch Livepeer's public key
-const fetchLivepeerPublicKey = async (livePeerApiKey) => {
-  const response = await axios.get(
-    "https://livepeer.studio/api/access-control/public-key",
-    { headers: { Authorization: `Bearer ${livePeerApiKey}` } },
-  );
-  return response.data.spki_public_key;
-};
-
 // Function to import the public key
 const importPublicKey = async (pemKey) => {
-  // Remove PEM header and footer
-  const pemHeader = "-----BEGIN PUBLIC KEY-----";
-  const pemFooter = "-----END PUBLIC KEY-----";
-  let rawBase64 = pemKey.replace(pemHeader, "").replace(pemFooter, "");
-  rawBase64 = rawBase64.replace(/\s+/g, ""); // Remove whitespace
-
-  // Convert Base64 to binary string
-  const binaryStr = Buffer.from(rawBase64, "base64").toString("binary");
-
-  // Convert binary string to an array of character codes
-  const binaryDer = new Uint8Array(binaryStr.length);
-  for (let i = 0; i < binaryStr.length; i++) {
-    binaryDer[i] = binaryStr.charCodeAt(i);
+  const forgeKey = forge.pki.publicKeyFromPem(pemKey);
+  const spkiKey = forge.asn1
+    .toDer(forge.pki.publicKeyToAsn1(forgeKey))
+    .getBytes();
+  const spkiArrayBuffer = new Uint8Array(spkiKey.length);
+  for (let i = 0; i < spkiKey.length; ++i) {
+    spkiArrayBuffer[i] = spkiKey.charCodeAt(i);
   }
 
-  // Import the public key
   return await crypto.webcrypto.subtle.importKey(
     "spki",
-    binaryDer.buffer,
+    spkiArrayBuffer,
     { name: "RSA-OAEP", hash: "SHA-256" },
     false,
     ["encrypt"],
   );
 };
 
-// Main encryption function
-const handleEncryption = async (
-  fileName,
-  livePeerApiKey,
-  livePeerPublicKey,
-) => {
+// Main encryption function that uses the provided public key
+const handleEncryption = async (fileName, livePeerPublicKey) => {
   const encryptionKey = crypto.randomBytes(32); // 256 bits
-  const livepeerPublicKeyBase64 = await fetchLivepeerPublicKey(livePeerApiKey);
-  const livepeerPublicKey = await importPublicKey(livepeerPublicKeyBase64);
-
+  const importedPublicKey = await importPublicKey(livePeerPublicKey);
   const encryptedKeyBuffer = await crypto.webcrypto.subtle.encrypt(
     { name: "RSA-OAEP" },
-    livepeerPublicKey,
+    importedPublicKey,
     encryptionKey,
   );
 
@@ -92,14 +70,14 @@ const handleEncryption = async (
   return { encryptedKey, fileName };
 };
 
+// Endpoint to handle the upload request
 app.post("/request-upload-url", async (req, res) => {
   try {
-    const { fileName, livePeerApiKey, livePeerPublicKey } = req.body;
+    const { fileName, livePeerPublicKey, livePeerApiKey } = req.body;
     const { encryptedKey } = await handleEncryption(
       fileName,
-      livePeerApiKey,
       livePeerPublicKey,
-    ); // Pass the public key
+    );
 
     const livepeer = new Livepeer({ apiKey: livePeerApiKey });
     const response = await livepeer.asset.create({
@@ -117,7 +95,7 @@ app.post("/request-upload-url", async (req, res) => {
 
     res.status(200).json(response);
   } catch (error) {
-    console.error("Error requesting asset upload:", error);
+    console.error("Error in handleEncryption:", error);
     res.status(500).json({ error: error.message });
   }
 });
