@@ -46,20 +46,26 @@ const fetchLivepeerPublicKey = async (livePeerApiKey) => {
 };
 
 // Function to import the public key
-const importPublicKey = async (spkiBase64) => {
-  // Decode Base64 to a binary string
-  const binaryDerString = Buffer.from(spkiBase64, "base64").toString("binary");
+const importPublicKey = async (pemKey) => {
+  // Remove PEM header and footer
+  const pemHeader = "-----BEGIN PUBLIC KEY-----";
+  const pemFooter = "-----END PUBLIC KEY-----";
+  let rawBase64 = pemKey.replace(pemHeader, "").replace(pemFooter, "");
+  rawBase64 = rawBase64.replace(/\s+/g, ""); // Remove whitespace
+
+  // Convert Base64 to binary string
+  const binaryStr = Buffer.from(rawBase64, "base64").toString("binary");
 
   // Convert binary string to an array of character codes
-  const binaryDer = new Uint8Array(binaryDerString.length);
-  for (let i = 0; i < binaryDerString.length; i++) {
-    binaryDer[i] = binaryDerString.charCodeAt(i);
+  const binaryDer = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    binaryDer[i] = binaryStr.charCodeAt(i);
   }
 
   // Import the public key
   return await crypto.webcrypto.subtle.importKey(
     "spki",
-    binaryDer,
+    binaryDer.buffer,
     { name: "RSA-OAEP", hash: "SHA-256" },
     false,
     ["encrypt"],
