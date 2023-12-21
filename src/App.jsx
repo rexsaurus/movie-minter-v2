@@ -2,11 +2,7 @@ import React, { useState } from "react";
 import "./App.css";
 
 export default function App() {
-  const [apiKeys, setApiKeys] = useState({
-    replicateKey: "",
-    livePeerKey: "",
-    livePeerPublicKey: "", // New state for LivePeer public key
-  });
+  const [apiKeys, setApiKeys] = useState({ replicateKey: "", livePeerKey: "" });
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [videoSrc, setVideoSrc] = useState("");
@@ -61,25 +57,6 @@ export default function App() {
     // Implement minting the video as an NFT
   }
 
-  async function handleStoreOnLivePeerClick() {
-    try {
-      const response = await fetch("http://localhost:5001/request-upload-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: "test/testvideo.mp4", // Replace with your file name
-          livePeerApiKey: apiKeys.livePeerKey,
-          livePeerPublicKey: apiKeys.livePeerPublicKey, // Pass the public key
-        }),
-      });
-      const data = await response.json();
-      console.log("Upload URL received:", data);
-      // Additional code to handle video upload to LivePeer
-    } catch (error) {
-      console.error("Error storing video on LivePeer:", error);
-    }
-  }
-
   return (
     <div className="app">
       <header className="header">
@@ -104,12 +81,6 @@ export default function App() {
             name="livePeerKey"
             placeholder="LivePeer API Key"
             value={apiKeys.livePeerKey}
-            onChange={handleInputChange}
-          />
-          <input
-            name="livePeerPublicKey"
-            placeholder="LivePeer Public Key"
-            value={apiKeys.livePeerPublicKey}
             onChange={handleInputChange}
           />
           <textarea
