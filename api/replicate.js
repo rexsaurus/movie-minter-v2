@@ -36,33 +36,49 @@ app.post("/generate-video", async (req, res) => {
   }
 });
 
-// Utility function to handle the encryption process
-async function handleEncryption(fileName, livePeerApiKey) {
-  const encryptionKey = crypto.randomBytes(32); // 256 bits
-  const livepeerPublicKeyResponse = await axios.get(
+// Function to fetch Livepeer's public key
+const fetchLivepeerPublicKey = async (livePeerApiKey) => {
+  const response = await axios.get(
     "https://livepeer.studio/api/access-control/public-key",
     { headers: { Authorization: `Bearer ${livePeerApiKey}` } },
   );
-  const livepeerPublicKey = livepeerPublicKeyResponse.data.spki_public_key;
+  return response.data.spki_public_key;
+};
 
-  // Convert Base64 encoded public key to buffer
-  const publicKeyBuffer = Buffer.from(livepeerPublicKey, "base64");
-  const importedPublicKey = await crypto.webcrypto.subtle.importKey(
+// Function to import the public key
+const importPublicKey = async (spkiBase64) => {
+  // Convert Base64 encoded string to an ArrayBuffer
+  const binaryString = Buffer.from(spkiBase64, "base64").toString("binary");
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // Import the public key
+  return await crypto.webcrypto.subtle.importKey(
     "spki",
-    publicKeyBuffer,
+    bytes.buffer,
     { name: "RSA-OAEP", hash: "SHA-256" },
     false,
     ["encrypt"],
   );
+};
+
+// Main encryption function
+const handleEncryption = async (fileName, livePeerApiKey) => {
+  const encryptionKey = crypto.randomBytes(32); // 256 bits
+  const livepeerPublicKeyBase64 = await fetchLivepeerPublicKey(livePeerApiKey);
+  const livepeerPublicKey = await importPublicKey(livepeerPublicKeyBase64);
+
   const encryptedKeyBuffer = await crypto.webcrypto.subtle.encrypt(
     { name: "RSA-OAEP" },
-    importedPublicKey,
+    livepeerPublicKey,
     encryptionKey,
   );
-  const encryptedKey = Buffer.from(encryptedKeyBuffer).toString("base64");
 
+  const encryptedKey = Buffer.from(encryptedKeyBuffer).toString("base64");
   return { encryptedKey, fileName };
-}
+};
 
 app.post("/request-upload-url", async (req, res) => {
   try {
