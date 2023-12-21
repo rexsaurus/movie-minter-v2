@@ -4,7 +4,7 @@ import cors from "cors";
 import { Livepeer } from "livepeer";
 import Replicate from "replicate";
 import dotenv from "dotenv";
-import { TypeT } from "livepeer/dist/models/components";
+import { TypeT } from "livepeer/dist/models/components/index.js";
 
 dotenv.config();
 
