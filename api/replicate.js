@@ -67,7 +67,11 @@ const importPublicKey = async (spkiBase64) => {
 };
 
 // Main encryption function
-const handleEncryption = async (fileName, livePeerApiKey) => {
+const handleEncryption = async (
+  fileName,
+  livePeerApiKey,
+  livePeerPublicKey,
+) => {
   const encryptionKey = crypto.randomBytes(32); // 256 bits
   const livepeerPublicKeyBase64 = await fetchLivepeerPublicKey(livePeerApiKey);
   const livepeerPublicKey = await importPublicKey(livepeerPublicKeyBase64);
@@ -84,8 +88,12 @@ const handleEncryption = async (fileName, livePeerApiKey) => {
 
 app.post("/request-upload-url", async (req, res) => {
   try {
-    const { fileName, livePeerApiKey } = req.body;
-    const { encryptedKey } = await handleEncryption(fileName, livePeerApiKey);
+    const { fileName, livePeerApiKey, livePeerPublicKey } = req.body;
+    const { encryptedKey } = await handleEncryption(
+      fileName,
+      livePeerApiKey,
+      livePeerPublicKey,
+    ); // Pass the public key
 
     const livepeer = new Livepeer({ apiKey: livePeerApiKey });
     const response = await livepeer.asset.create({
