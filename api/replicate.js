@@ -62,18 +62,42 @@ const importPublicKey = async (pemKey) => {
     throw error; // Rethrow the error for further handling
   }
 };
+const reformatPublicKey = (pemKey) => {
+  // Extract the Base64-encoded part of the PEM key
+  const base64Encoded = pemKey.match(
+    /-----BEGIN PUBLIC KEY-----(.*)-----END PUBLIC KEY-----/s,
+  );
+  if (!base64Encoded || base64Encoded.length < 2) {
+    throw new Error("Invalid PEM key format");
+  }
 
-// Main encryption function that uses the provided public key
+  // Decode and re-encode the key
+  const decoded = Buffer.from(base64Encoded[1], "base64").toString("binary");
+  const reencoded = Buffer.from(decoded, "binary").toString("base64");
+
+  return `-----BEGIN PUBLIC KEY-----\n${reencoded}\n-----END PUBLIC KEY-----`;
+};
+
 const handleEncryption = async (fileName, livePeerPublicKey) => {
+  // Reformat the public key to proper PEM format
+  const formattedPublicKey = reformatPublicKey(livePeerPublicKey);
+
+  // Import the formatted public key
+  const importedPublicKey = await importPublicKey(formattedPublicKey);
+
+  // Generate a random 256-bit encryption key
   const encryptionKey = crypto.randomBytes(32); // 256 bits
-  const importedPublicKey = await importPublicKey(livePeerPublicKey);
+
+  // Encrypt using the imported public key
   const encryptedKeyBuffer = await crypto.webcrypto.subtle.encrypt(
     { name: "RSA-OAEP" },
     importedPublicKey,
     encryptionKey,
   );
 
+  // Convert the encrypted key to Base64
   const encryptedKey = Buffer.from(encryptedKeyBuffer).toString("base64");
+
   return { encryptedKey, fileName };
 };
 
