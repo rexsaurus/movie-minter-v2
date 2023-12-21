@@ -38,22 +38,29 @@ app.post("/generate-video", async (req, res) => {
 
 // Function to import the public key
 const importPublicKey = async (pemKey) => {
-  const forgeKey = forge.pki.publicKeyFromPem(pemKey);
-  const spkiKey = forge.asn1
-    .toDer(forge.pki.publicKeyToAsn1(forgeKey))
-    .getBytes();
-  const spkiArrayBuffer = new Uint8Array(spkiKey.length);
-  for (let i = 0; i < spkiKey.length; ++i) {
-    spkiArrayBuffer[i] = spkiKey.charCodeAt(i);
-  }
+  console.log("Received PEM Key:", pemKey); // Log the received PEM key
 
-  return await crypto.webcrypto.subtle.importKey(
-    "spki",
-    spkiArrayBuffer,
-    { name: "RSA-OAEP", hash: "SHA-256" },
-    false,
-    ["encrypt"],
-  );
+  try {
+    const forgeKey = forge.pki.publicKeyFromPem(pemKey);
+    const spkiKey = forge.asn1
+      .toDer(forge.pki.publicKeyToAsn1(forgeKey))
+      .getBytes();
+    const spkiArrayBuffer = new Uint8Array(spkiKey.length);
+    for (let i = 0; i < spkiKey.length; ++i) {
+      spkiArrayBuffer[i] = spkiKey.charCodeAt(i);
+    }
+
+    return await crypto.webcrypto.subtle.importKey(
+      "spki",
+      spkiArrayBuffer,
+      { name: "RSA-OAEP", hash: "SHA-256" },
+      false,
+      ["encrypt"],
+    );
+  } catch (error) {
+    console.error("Error in importPublicKey:", error);
+    throw error; // Rethrow the error for further handling
+  }
 };
 
 // Main encryption function that uses the provided public key
