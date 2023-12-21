@@ -5,6 +5,8 @@ import { Livepeer } from "livepeer";
 import Replicate from "replicate";
 import dotenv from "dotenv";
 import { TypeT } from "livepeer/dist/models/components/index.js";
+import crypto from "crypto";
+import axios from "axios";
 
 dotenv.config();
 
@@ -34,13 +36,58 @@ app.post("/generate-video", async (req, res) => {
   }
 });
 
+// Function to generate an encryption key
+const generateEncryptionKey = () => {
+  return crypto.randomBytes(32); // 256 bits
+};
+
+// Function to fetch Livepeer's public key
+const fetchLivepeerPublicKey = async () => {
+  const response = await axios.get(
+    "https://livepeer.studio/api/access-control/public-key",
+    {
+      headers: { Authorization: `Bearer ${process.env.LIVEPEER_API_KEY}` },
+    },
+  );
+  return response.data.spki_public_key;
+};
+
+// Function to encrypt the encryption key using Livepeer's public key
+const encryptKeyWithPublicKey = async (key, publicKey) => {
+  // Convert Base64 encoded public key to buffer
+  const publicKeyBuffer = Buffer.from(publicKey, "base64");
+
+  // Import the public key
+  const importedPublicKey = await crypto.webcrypto.subtle.importKey(
+    "spki",
+    publicKeyBuffer,
+    { name: "RSA-OAEP", hash: "SHA-256" },
+    false,
+    ["encrypt"],
+  );
+
+  // Encrypt the key
+  const encryptedKeyBuffer = await crypto.webcrypto.subtle.encrypt(
+    { name: "RSA-OAEP" },
+    importedPublicKey,
+    key,
+  );
+
+  return Buffer.from(encryptedKeyBuffer).toString("base64");
+};
+
 app.post("/request-upload-url", async (req, res) => {
   try {
     const { fileName, livePeerApiKey } = req.body;
 
-    const sdk = new Livepeer({
-      apiKey: livePeerApiKey,
-    });
+    const sdk = new Livepeer({ apiKey: livePeerApiKey });
+
+    const encryptionKey = generateEncryptionKey();
+    const livepeerPublicKey = await fetchLivepeerPublicKey();
+    const encryptedKey = await encryptKeyWithPublicKey(
+      encryptionKey,
+      livepeerPublicKey,
+    );
 
     const response = await sdk.asset.create({
       name: fileName,
@@ -48,17 +95,13 @@ app.post("/request-upload-url", async (req, res) => {
       playbackPolicy: {
         type: TypeT.Jwt,
         webhookId: "3e02c844-d364-4d48-b401-24b2773b5d6c",
-        webhookContext: {
-          //foo: "string",
-        },
+        webhookContext: {},
       },
-      creatorId: "string", // Replace with actual creator ID
-      storage: {
-        //ipfs: "string", // Replace with actual IPFS string if used
-      },
+      creatorId: "string",
+      storage: {},
       url: `https://s3.amazonaws.com/my-bucket/path/${fileName}`,
       encryption: {
-        //encryptedKey: "string", // Replace with actual encrypted key if used
+        encryptedKey: encryptedKey,
       },
     });
 
