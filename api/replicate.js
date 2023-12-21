@@ -36,28 +36,17 @@ app.post("/generate-video", async (req, res) => {
   }
 });
 
-// Function to generate an encryption key
-const generateEncryptionKey = () => {
-  return crypto.randomBytes(32); // 256 bits
-};
-
-// Function to fetch Livepeer's public key
-const fetchLivepeerPublicKey = async () => {
-  const response = await axios.get(
+// Utility function to handle the encryption process
+async function handleEncryption(fileName, livePeerApiKey) {
+  const encryptionKey = crypto.randomBytes(32); // 256 bits
+  const livepeerPublicKeyResponse = await axios.get(
     "https://livepeer.studio/api/access-control/public-key",
-    {
-      headers: { Authorization: `Bearer ${process.env.LIVEPEER_API_KEY}` },
-    },
+    { headers: { Authorization: `Bearer ${livePeerApiKey}` } },
   );
-  return response.data.spki_public_key;
-};
+  const livepeerPublicKey = livepeerPublicKeyResponse.data.spki_public_key;
 
-// Function to encrypt the encryption key using Livepeer's public key
-const encryptKeyWithPublicKey = async (key, publicKey) => {
   // Convert Base64 encoded public key to buffer
-  const publicKeyBuffer = Buffer.from(publicKey, "base64");
-
-  // Import the public key
+  const publicKeyBuffer = Buffer.from(livepeerPublicKey, "base64");
   const importedPublicKey = await crypto.webcrypto.subtle.importKey(
     "spki",
     publicKeyBuffer,
@@ -65,51 +54,36 @@ const encryptKeyWithPublicKey = async (key, publicKey) => {
     false,
     ["encrypt"],
   );
-
-  // Encrypt the key
   const encryptedKeyBuffer = await crypto.webcrypto.subtle.encrypt(
     { name: "RSA-OAEP" },
     importedPublicKey,
-    key,
+    encryptionKey,
   );
+  const encryptedKey = Buffer.from(encryptedKeyBuffer).toString("base64");
 
-  return Buffer.from(encryptedKeyBuffer).toString("base64");
-};
+  return { encryptedKey, fileName };
+}
 
 app.post("/request-upload-url", async (req, res) => {
   try {
     const { fileName, livePeerApiKey } = req.body;
+    const { encryptedKey } = await handleEncryption(fileName, livePeerApiKey);
 
-    const sdk = new Livepeer({ apiKey: livePeerApiKey });
-
-    const encryptionKey = generateEncryptionKey();
-    const livepeerPublicKey = await fetchLivepeerPublicKey();
-    const encryptedKey = await encryptKeyWithPublicKey(
-      encryptionKey,
-      livepeerPublicKey,
-    );
-
-    const response = await sdk.asset.create({
+    const livepeer = new Livepeer({ apiKey: livePeerApiKey });
+    const response = await livepeer.asset.create({
       name: fileName,
       staticMp4: true,
       playbackPolicy: {
         type: TypeT.Jwt,
         webhookId: "3e02c844-d364-4d48-b401-24b2773b5d6c",
-        webhookContext: {},
       },
-      creatorId: "string",
-      storage: {},
+      creatorId: "string", // Replace with actual creator ID
+      storage: {}, // Replace with actual storage details if necessary
       url: `https://s3.amazonaws.com/my-bucket/path/${fileName}`,
-      encryption: {
-        encryptedKey: encryptedKey,
-      },
+      encryption: { encryptedKey },
     });
 
-    if (response.statusCode === 200) {
-      res.status(200).json(response.data);
-    } else {
-      res.status(response.statusCode).json({ error: response.data });
-    }
+    res.status(200).json(response);
   } catch (error) {
     console.error("Error requesting asset upload:", error);
     res.status(500).json({ error: error.message });
