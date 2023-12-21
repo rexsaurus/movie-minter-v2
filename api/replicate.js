@@ -62,20 +62,25 @@ const importPublicKey = async (pemKey) => {
     throw error; // Rethrow the error for further handling
   }
 };
-const reformatPublicKey = (pemKey) => {
-  // Extract the Base64-encoded part of the PEM key
-  const base64Encoded = pemKey.match(
-    /-----BEGIN PUBLIC KEY-----(.*)-----END PUBLIC KEY-----/s,
-  );
-  if (!base64Encoded || base64Encoded.length < 2) {
-    throw new Error("Invalid PEM key format");
+
+const reformatPublicKey = (encodedPemKey) => {
+  // Decode the entire Base64-encoded string
+  const decodedPemKey = Buffer.from(encodedPemKey, "base64").toString("utf-8");
+
+  // Check if the decoded key already has the correct PEM headers and footers
+  const pemHeader = "-----BEGIN PUBLIC KEY-----";
+  const pemFooter = "-----END PUBLIC KEY-----";
+  if (
+    decodedPemKey.startsWith(pemHeader) &&
+    decodedPemKey.endsWith(pemFooter)
+  ) {
+    // The key is already in PEM format
+    return decodedPemKey;
+  } else {
+    // The key does not have proper PEM formatting, add headers and footers
+    const formattedKey = `${pemHeader}\n${decodedPemKey}\n${pemFooter}`;
+    return formattedKey;
   }
-
-  // Decode and re-encode the key
-  const decoded = Buffer.from(base64Encoded[1], "base64").toString("binary");
-  const reencoded = Buffer.from(decoded, "binary").toString("base64");
-
-  return `-----BEGIN PUBLIC KEY-----\n${reencoded}\n-----END PUBLIC KEY-----`;
 };
 
 const handleEncryption = async (fileName, livePeerPublicKey) => {
