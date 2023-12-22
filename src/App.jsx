@@ -61,14 +61,18 @@ export default function App() {
   async function handleTestLivePeerUploadClick() {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5001/test-livepeer-upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey: apiKeys.livePeerKey,
-          videoUrl: "https://github.com/rexsaurus/live-peer-upload-bug/raw/main/testvideo.mp4",
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:5001/test-livepeer-upload",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apiKey: apiKeys.livePeerKey,
+            videoUrl:
+              "https://github.com/rexsaurus/live-peer-upload-bug/raw/main/testvideo.mp4",
+          }),
+        },
+      );
       const data = await response.json();
       setReplicateVideoUrl(data.replicateVideoUrl);
     } catch (error) {
@@ -76,7 +80,6 @@ export default function App() {
     }
     setLoading(false);
   }
-
 
   return (
     <div className="app">
@@ -120,10 +123,13 @@ export default function App() {
         </div>
       </div>
       <footer className="footer">
-              <button onClick={handleStoreOnLivePeerClick}>Store on LivePeer</button>
-              <button onClick={handleMintAsNFTClick}>Mint as NFT</button>
-              <button onClick={handleStoreOnLivePeerClick}>Test LivePeer Upload</button> {/* New button */}
-            </footer>
-          </div>
-        );
-      }
+        <button onClick={handleStoreOnLivePeerClick}>Store on LivePeer</button>
+        <button onClick={handleMintAsNFTClick}>Mint as NFT</button>
+        <button onClick={handleStoreOnLivePeerClick}>
+          Test LivePeer Upload
+        </button>{" "}
+        {/* New button */}
+      </footer>
+    </div>
+  );
+}
