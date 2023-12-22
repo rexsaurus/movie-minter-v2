@@ -26,28 +26,50 @@ app.post("/generate-video", async (req, res) => {
     );
     prediction = await replicate.wait(prediction);
 
-    res.status(200).json(prediction.output);
+    // Extract the video URL from the prediction output
+    const videoUrl = prediction.output.video_url;
+    console.log("video created at url: " + videoUrl);
+    res.status(200).json({ videoUrl });
   } catch (error) {
     console.error("Error generating video:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Endpoint to handle the asset upload request
 app.post("/request-upload-url", async (req, res) => {
   try {
-    const { fileName, livePeerApiKey } = req.body;
-    const livepeer = new Livepeer({ apiKey: livePeerApiKey });
+    const { apiKey, videoUrl } = req.body;
+    const livepeer = new Livepeer({ apiKey });
 
-    const response = await livepeer.asset.create({
-      name: fileName,
-      // Add other asset properties if needed
-    });
+    const main = async () => {
+      try {
+        const { data } = await livepeer.asset.create({
+          name: "Test Video Asset",
+          staticMp4: true,
+          playbackPolicy: {
+            type: TypeT.Jwt,
+            webhookId: "3e02c844-d364-4d48-b401-24b2773b5d6c",
+          },
+          creatorId: "movie-minter", // Replace with actual creator ID
+          storage: {}, // Replace with actual storage details if necessary
+          url: videoUrl, // Use the provided video URL
+        });
 
-    res.status(200).json(response);
+        // Log the asset data
+        console.log("Asset created:", data);
+
+        // Respond with the asset URL in the response
+        res.status(200).json({ replicateVideoUrl: data.playbackId });
+      } catch (error) {
+        console.error("Error LivePeer upload:", error);
+        res.status(500).json({ error: "Error LivePeer upload" });
+      }
+    };
+
+    main();
   } catch (error) {
-    console.error("Error creating asset in Livepeer:", error);
-    res.status(500).json({ error: error.message });
+    console.error("Error handling LivePeer upload:", error);
+    res.status(500).json({ error: "Error handling LivePeer upload" });
   }
 });
 
